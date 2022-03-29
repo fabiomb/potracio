@@ -1254,5 +1254,67 @@ class Potracio{
 
     return $svg;
   }
+  public function saveSVG($archivo, $size, $opt_type='') {
+    $bm = &$this->bm;
+    $pathlist = &$this->pathlist;
+    $path = function($curve) use($size) {
+      
+      $bezier = function($i) use($curve, $size) {
+        $b = 'C ' . number_format($curve->c[$i * 3 + 0]->x * $size, 3, ".", "") . ' ' .
+             number_format($curve->c[$i * 3 + 0]->y * $size, 3, ".", "") . ',';
+        $b .= number_format($curve->c[$i * 3 + 1]->x * $size, 3, ".", "") . ' ' .
+              number_format($curve->c[$i * 3 + 1]->y * $size, 3, ".", "") . ',';
+        $b .= number_format($curve->c[$i * 3 + 2]->x * $size, 3, ".", "") . ' ' .
+              number_format($curve->c[$i * 3 + 2]->y * $size, 3, ".", "") . ' ';
+        return $b;
+      };
+      
+      $segment = function($i) use ($curve, $size) {
+        $s = 'L ' . number_format($curve->c[$i * 3 + 1]->x * $size, 3, ".", "") . ' ' .
+             number_format($curve->c[$i * 3 + 1]->y * $size, 3, ".", "") . ' ';
+        $s .= number_format($curve->c[$i * 3 + 2]->x * $size, 3, ".", "") . ' ' .
+              number_format($curve->c[$i * 3 + 2]->y * $size, 3, ".", "") . ' ';
+        return $s;
+      };
+
+      $n = $curve->n;
+      $p = 'M' . number_format($curve->c[($n - 1) * 3 + 2]->x * $size, 3, ".", "") .
+           ' ' . number_format($curve->c[($n - 1) * 3 + 2]->y * $size, 3, ".", "") . ' ';
+
+      for ($i = 0; $i < $n; $i++) {
+        if ($curve->tag[$i] === "CURVE") {
+          $p .= $bezier($i);
+        } else if ($curve->tag[$i] === "CORNER") {
+          $p .= $segment($i);
+        }
+      }
+      //p +=
+      return $p;
+    };
+
+    $w = $bm->w * $size; $h = $bm->h * $size;
+    $len = count($pathlist);
+
+    $svg = '<svg id="svg" version="1.1" width="' . $w . '" height="' . $h .
+           '" xmlns="http://www.w3.org/2000/svg">';
+    $svg .= '<path d="';
+    for ($i = 0; $i < $len; $i++) {
+      $c = $pathlist[$i]->curve;
+      $svg .= $path($c);
+    }
+    if ($opt_type === "curve") {
+      $strokec = "black";
+      $fillc = "none";
+      $fillrule = '';
+    } else {
+      $strokec = "none";
+      $fillc = "black";
+      $fillrule = ' fill-rule="evenodd"';
+    }
+    $svg .= '" stroke="' . $strokec . '" fill="' . $fillc . '"' . $fillrule . '/></svg>';
+
+    // guardo a archivo $svg;
+    file_put_contents($archivo, $svg);
+  }
 }
 ?>
